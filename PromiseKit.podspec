@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   def s.PMKOSX; "10.7"; end
 
   s.name = "PromiseKit"
-  s.version = "0.9.15.3"
+  s.version = "0.9.16"
   s.source = { :git => "https://github.com/mxcl/#{s.name}.git", :tag => s.version }
   s.license = 'MIT'
   s.summary = 'A delightful Promises implementation for iOS and OS X.'
@@ -46,13 +46,15 @@ Pod::Spec.new do |s|
 
       yield(ss)
 
-      ss.ios.deployment_target = pmk_max.call((ss.ios.deployment_target rescue "0.0"), self.PMKiOS)
-      ss.osx.deployment_target = pmk_max.call((ss.osx.deployment_target rescue "0.0"), self.PMKOSX)
-
-      ss = case prefix when 'UI', 'AV'
-        ss.ios
+      if ss.deployment_target(:ios).nil?
+        ss.osx.deployment_target = pmk_max.call(ss.deployment_target(:osx), self.PMKOSX)
+        ss = ss.osx
+      elsif ss.deployment_target(:osx).nil?
+        ss.ios.deployment_target = pmk_max.call(ss.deployment_target(:ios), self.PMKOSX)
+        ss = ss.ios
       else
-        ss
+        ss.ios.deployment_target = pmk_max.call(ss.deployment_target(:ios), self.PMKiOS)
+        ss.osx.deployment_target = pmk_max.call(ss.deployment_target(:osx), self.PMKOSX)
       end
 
       ss.framework = framework
@@ -62,9 +64,6 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.ios.deployment_target = s.PMKiOS
-  s.osx.deployment_target = s.PMKOSX
-
   s.subspec 'Promise' do |ss|
     ss.ios.deployment_target = s.PMKiOS
     ss.osx.deployment_target = s.PMKOSX
@@ -72,7 +71,7 @@ Pod::Spec.new do |s|
     ss.preserve_paths = 'objc/PromiseKit', 'objc/Private'
     ss.frameworks = 'Foundation'
   end
-  
+
   %w{Pause Until When}.each do |name|
     s.subspec(name) do |ss|
       ss.source_files = "objc/PMKPromise+#{name}.m", "objc/PromiseKit/Promise+#{name}.h"
@@ -126,6 +125,9 @@ Pod::Spec.new do |s|
     ss.ios.deployment_target = '4.0'
     ss.osx.deployment_target = '10.6'
   end
+  s.mksubspec 'NSTask' do |ss|
+    ss.osx.deployment_target = '10.0'
+  end
   s.mksubspec 'NSURLConnection' do |ss|
     ss.dependency "OMGHTTPURLRQ"
     ss.ios.deployment_target = '5.0'
@@ -153,7 +155,7 @@ Pod::Spec.new do |s|
     ss.ios.deployment_target = '5.0'
     ss.ios.weak_frameworks = 'AssetsLibrary'
   end
-  
+
   s.subspec 'Accounts' do |ss|
     ss.dependency 'PromiseKit/ACAccountStore'
   end
@@ -170,6 +172,7 @@ Pod::Spec.new do |s|
   end
   s.subspec 'Foundation' do |ss|
     ss.dependency 'PromiseKit/NSNotificationCenter'
+    ss.dependency 'PromiseKit/NSTask'
     ss.dependency 'PromiseKit/NSURLConnection'
   end
   s.subspec 'MapKit' do |ss|
@@ -192,7 +195,7 @@ Pod::Spec.new do |s|
   s.subspec 'all' do |ss|
     ss.dependency 'PromiseKit/When'
     ss.dependency 'PromiseKit/Until'
-    ss.dependency 'PromiseKit/Pause'    
+    ss.dependency 'PromiseKit/Pause'
 
     ss.dependency 'PromiseKit/Accounts'
     ss.dependency 'PromiseKit/AVFoundation'
